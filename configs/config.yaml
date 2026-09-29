@@ -1,0 +1,10 @@
+project:
+  name: "user-behavior-prediction"
+
+data:
+  raw_path: "data/raw"
+  interim_path: "data/interim"
+  processed_path: "data/processed"
+
+model:
+  random_state: 42
