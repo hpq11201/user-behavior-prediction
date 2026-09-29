@@ -1,0 +1,11 @@
+pandas
+numpy
+dask
+pyarrow
+pyyaml
+black
+isort
+flake8
+mypy
+pylint
+pytest
