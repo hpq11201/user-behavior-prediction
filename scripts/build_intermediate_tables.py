@@ -4,15 +4,9 @@ from pathlib import Path
 
 import pandas as pd
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-CLEAN_DATA_PATH = (
-    PROJECT_ROOT
-    / "data"
-    / "processed"
-    / "user_behavior_clean.parquet"
-)
+CLEAN_DATA_PATH = PROJECT_ROOT / "data" / "processed" / "user_behavior_clean.parquet"
 
 INTERIM_DIR = PROJECT_ROOT / "data" / "interim"
 
@@ -30,11 +24,10 @@ def load_clean_data(file_path: Path) -> pd.DataFrame:
         FileNotFoundError: If the cleaned dataset does not exist.
     """
     if not file_path.exists():
-        raise FileNotFoundError(
-            f"Cleaned dataset not found: {file_path}"
-        )
+        raise FileNotFoundError(f"Cleaned dataset not found: {file_path}")
 
-    return pd.read_parquet(file_path)
+    dataframe: pd.DataFrame = pd.read_parquet(file_path)
+    return dataframe
 
 
 def build_user_summary(
@@ -97,26 +90,23 @@ def build_user_summary(
             user_summary[column] = 0
 
     user_summary["view_ratio"] = (
-        user_summary["view_count"]
-        / user_summary["total_behaviors"]
+        user_summary["view_count"] / user_summary["total_behaviors"]
     )
 
     user_summary["favorite_ratio"] = (
-        user_summary["favorite_count"]
-        / user_summary["total_behaviors"]
+        user_summary["favorite_count"] / user_summary["total_behaviors"]
     )
 
     user_summary["cart_ratio"] = (
-        user_summary["cart_count"]
-        / user_summary["total_behaviors"]
+        user_summary["cart_count"] / user_summary["total_behaviors"]
     )
 
     user_summary["purchase_ratio"] = (
-        user_summary["purchase_count"]
-        / user_summary["total_behaviors"]
+        user_summary["purchase_count"] / user_summary["total_behaviors"]
     )
 
-    return user_summary
+    result: pd.DataFrame = user_summary
+    return result
 
 
 def build_item_summary(
@@ -178,11 +168,11 @@ def build_item_summary(
             item_summary[column] = 0
 
     item_summary["purchase_rate"] = (
-        item_summary["purchase_count"]
-        / item_summary["total_behaviors"]
+        item_summary["purchase_count"] / item_summary["total_behaviors"]
     )
 
-    return item_summary
+    result: pd.DataFrame = item_summary
+    return result
 
 
 def build_time_summary(
@@ -198,13 +188,9 @@ def build_time_summary(
     """
     time_dataframe = dataframe.copy()
 
-    time_dataframe["date"] = (
-        time_dataframe["timestamp"].dt.date
-    )
+    time_dataframe["date"] = time_dataframe["timestamp"].dt.date
 
-    time_dataframe["hour"] = (
-        time_dataframe["timestamp"].dt.hour
-    )
+    time_dataframe["hour"] = time_dataframe["timestamp"].dt.hour
 
     behavior_counts = (
         time_dataframe.pivot_table(
@@ -240,7 +226,8 @@ def build_time_summary(
         how="left",
     )
 
-    return time_summary
+    result: pd.DataFrame = time_summary
+    return result
 
 
 def save_table(
@@ -266,46 +253,39 @@ def save_table(
         engine="pyarrow",
     )
 
-    print(
-        f"Saved {file_name}: "
-        f"{len(dataframe):,} rows"
-    )
+    print(f"Saved {file_name}: " f"{len(dataframe):,} rows")
 
 
 def main() -> None:
     """Build and save all basic intermediate tables."""
     print("Loading cleaned dataset...")
 
-    dataframe = load_clean_data(
-        CLEAN_DATA_PATH
-    )
+    dataframe = load_clean_data(CLEAN_DATA_PATH)
 
-    print(
-        f"Loaded {len(dataframe):,} records."
-    )
+    print(f"Loaded {len(dataframe):,} records.")
 
     print("\nBuilding user summary...")
-    user_summary = build_user_summary(
-        dataframe
-    )
+
+    user_summary = build_user_summary(dataframe)
+
     save_table(
         user_summary,
         "user_summary.parquet",
     )
 
     print("\nBuilding item summary...")
-    item_summary = build_item_summary(
-        dataframe
-    )
+
+    item_summary = build_item_summary(dataframe)
+
     save_table(
         item_summary,
         "item_summary.parquet",
     )
 
     print("\nBuilding time summary...")
-    time_summary = build_time_summary(
-        dataframe
-    )
+
+    time_summary = build_time_summary(dataframe)
+
     save_table(
         time_summary,
         "time_summary.parquet",

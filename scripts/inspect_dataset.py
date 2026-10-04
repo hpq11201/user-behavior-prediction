@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = PROJECT_ROOT / "data" / "raw" / "user_behavior.csv"
 
@@ -33,7 +32,9 @@ VALID_BEHAVIOR_TYPES = {1, 2, 3, 4}
 CHUNK_SIZE = 1_000_000
 
 
-def standardize_columns(dataframe: pd.DataFrame) -> pd.DataFrame:
+def standardize_columns(
+    dataframe: pd.DataFrame,
+) -> pd.DataFrame:
     """Rename raw dataset columns to the project standard schema.
 
     Args:
@@ -42,7 +43,8 @@ def standardize_columns(dataframe: pd.DataFrame) -> pd.DataFrame:
     Returns:
         Dataframe with standardized project column names.
     """
-    return dataframe.rename(columns=COLUMN_MAPPING)
+    renamed_dataframe: pd.DataFrame = dataframe.rename(columns=COLUMN_MAPPING)
+    return renamed_dataframe
 
 
 def inspect_dataset(file_path: Path) -> None:
@@ -61,13 +63,14 @@ def inspect_dataset(file_path: Path) -> None:
     print("RAW DATASET INSPECTION")
     print("=" * 60)
     print(f"Dataset path: {file_path}")
-    print(f"File size: {file_path.stat().st_size / (1024 ** 2):.2f} MB")
+    print(f"File size: " f"{file_path.stat().st_size / (1024 ** 2):.2f} MB")
 
     total_rows = 0
     duplicate_rows = 0
     invalid_timestamp_count = 0
 
     null_counts = {column: 0 for column in EXPECTED_COLUMNS}
+
     behavior_counts: dict[object, int] = {}
 
     user_ids: set[object] = set()
@@ -79,7 +82,10 @@ def inspect_dataset(file_path: Path) -> None:
     columns_checked = False
 
     for chunk_number, chunk in enumerate(
-        pd.read_csv(file_path, chunksize=CHUNK_SIZE),
+        pd.read_csv(
+            file_path,
+            chunksize=CHUNK_SIZE,
+        ),
         start=1,
     ):
         if not columns_checked:
@@ -87,16 +93,12 @@ def inspect_dataset(file_path: Path) -> None:
             print(list(chunk.columns))
 
             missing_raw_columns = set(RAW_COLUMNS) - set(chunk.columns)
+
             extra_raw_columns = set(chunk.columns) - set(RAW_COLUMNS)
 
-            print(
-                f"Missing raw columns: "
-                f"{sorted(missing_raw_columns)}"
-            )
-            print(
-                f"Unexpected raw columns: "
-                f"{sorted(extra_raw_columns)}"
-            )
+            print("Missing raw columns: " f"{sorted(missing_raw_columns)}")
+
+            print("Unexpected raw columns: " f"{sorted(extra_raw_columns)}")
 
             columns_checked = True
 
@@ -110,16 +112,18 @@ def inspect_dataset(file_path: Path) -> None:
         duplicate_rows += int(chunk.duplicated().sum())
 
         user_ids.update(chunk["user_id"].dropna().unique())
+
         item_ids.update(chunk["item_id"].dropna().unique())
+
         category_ids.update(chunk["category_id"].dropna().unique())
 
         counts = chunk["behavior_type"].value_counts(dropna=False)
 
         for behavior_type, count in counts.items():
-            behavior_counts[behavior_type] = (
-                behavior_counts.get(behavior_type, 0)
-                + int(count)
-            )
+            behavior_counts[behavior_type] = behavior_counts.get(
+                behavior_type,
+                0,
+            ) + int(count)
 
         timestamps = pd.to_datetime(
             chunk["timestamp"],
@@ -140,10 +144,7 @@ def inspect_dataset(file_path: Path) -> None:
             if max_timestamp is None or chunk_max > max_timestamp:
                 max_timestamp = chunk_max
 
-        print(
-            f"Processed chunk {chunk_number}: "
-            f"{total_rows:,} rows processed"
-        )
+        print(f"Processed chunk {chunk_number}: " f"{total_rows:,} rows processed")
 
     invalid_behavior_count = sum(
         count
@@ -156,29 +157,38 @@ def inspect_dataset(file_path: Path) -> None:
     print("=" * 60)
 
     print(f"Total rows: {total_rows:,}")
-    print(f"Duplicate rows within chunks: {duplicate_rows:,}")
+
+    print("Duplicate rows within chunks: " f"{duplicate_rows:,}")
 
     print("\nMissing values:")
+
     for column, count in null_counts.items():
         print(f"  {column}: {count:,}")
 
     print("\nUnique values:")
+
     print(f"  Users: {len(user_ids):,}")
+
     print(f"  Items: {len(item_ids):,}")
+
     print(f"  Categories: {len(category_ids):,}")
 
     print("\nBehavior distribution:")
+
     for behavior_type, count in sorted(
         behavior_counts.items(),
         key=lambda item: str(item[0]),
     ):
         print(f"  {behavior_type}: {count:,}")
 
-    print(f"\nInvalid behavior records: {invalid_behavior_count:,}")
-    print(f"Invalid timestamp records: {invalid_timestamp_count:,}")
+    print("\nInvalid behavior records: " f"{invalid_behavior_count:,}")
+
+    print("Invalid timestamp records: " f"{invalid_timestamp_count:,}")
 
     print("\nTimestamp range:")
+
     print(f"  Earliest: {min_timestamp}")
+
     print(f"  Latest: {max_timestamp}")
 
     print("\nInspection completed.")

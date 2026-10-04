@@ -4,21 +4,12 @@ from pathlib import Path
 
 import pandas as pd
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-RAW_DATA_PATH = (
-    PROJECT_ROOT
-    / "data"
-    / "raw"
-    / "user_behavior.csv"
-)
+RAW_DATA_PATH = PROJECT_ROOT / "data" / "raw" / "user_behavior.csv"
 
 PROCESSED_DATA_PATH = (
-    PROJECT_ROOT
-    / "data"
-    / "processed"
-    / "user_behavior_clean.parquet"
+    PROJECT_ROOT / "data" / "processed" / "user_behavior_clean.parquet"
 )
 
 COLUMN_MAPPING = {
@@ -42,11 +33,11 @@ def load_raw_data(file_path: Path) -> pd.DataFrame:
         FileNotFoundError: If the raw dataset does not exist.
     """
     if not file_path.exists():
-        raise FileNotFoundError(
-            f"Raw dataset not found: {file_path}"
-        )
+        raise FileNotFoundError(f"Raw dataset not found: {file_path}")
 
-    return pd.read_csv(file_path)
+    dataframe: pd.DataFrame = pd.read_csv(file_path)
+
+    return dataframe
 
 
 def standardize_schema(
@@ -60,7 +51,9 @@ def standardize_schema(
     Returns:
         Dataframe with standardized column names.
     """
-    return dataframe.rename(columns=COLUMN_MAPPING)
+    standardized_dataframe: pd.DataFrame = dataframe.rename(columns=COLUMN_MAPPING)
+
+    return standardized_dataframe
 
 
 def clean_data(
@@ -85,28 +78,15 @@ def clean_data(
         "behavior_type",
     ]
 
-    missing_before = int(
-        dataframe[required_columns]
-        .isna()
-        .any(axis=1)
-        .sum()
-    )
+    missing_rows_removed = int(dataframe[required_columns].isna().any(axis=1).sum())
 
-    dataframe = dataframe.dropna(
-        subset=required_columns
-    )
+    dataframe = dataframe.dropna(subset=required_columns).copy()
 
-    invalid_behavior_mask = ~dataframe[
-        "behavior_type"
-    ].isin(VALID_BEHAVIOR_TYPES)
+    invalid_behavior_mask = ~dataframe["behavior_type"].isin(VALID_BEHAVIOR_TYPES)
 
-    invalid_behavior_rows = int(
-        invalid_behavior_mask.sum()
-    )
+    invalid_behavior_rows_removed = int(invalid_behavior_mask.sum())
 
-    dataframe = dataframe.loc[
-        ~invalid_behavior_mask
-    ].copy()
+    dataframe = dataframe.loc[~invalid_behavior_mask].copy()
 
     dataframe["timestamp"] = pd.to_datetime(
         dataframe["timestamp"],
@@ -114,15 +94,11 @@ def clean_data(
         errors="coerce",
     )
 
-    invalid_timestamp_rows = int(
-        dataframe["timestamp"].isna().sum()
-    )
+    invalid_timestamp_rows_removed = int(dataframe["timestamp"].isna().sum())
 
-    dataframe = dataframe.dropna(
-        subset=["timestamp"]
-    )
+    dataframe = dataframe.dropna(subset=["timestamp"]).copy()
 
-    duplicate_rows = int(
+    duplicate_rows_removed = int(
         dataframe.duplicated(
             subset=[
                 "user_id",
@@ -142,25 +118,17 @@ def clean_data(
             "timestamp",
         ],
         keep="first",
-    )
+    ).copy()
 
-    dataframe["behavior_type"] = dataframe[
-        "behavior_type"
-    ].astype("int8")
+    dataframe["behavior_type"] = dataframe["behavior_type"].astype("int8")
 
-    dataframe["category_id"] = dataframe[
-        "category_id"
-    ].astype("int32")
+    dataframe["category_id"] = dataframe["category_id"].astype("int32")
 
-    dataframe["user_id"] = dataframe[
-        "user_id"
-    ].astype("int32")
+    dataframe["user_id"] = dataframe["user_id"].astype("int32")
 
-    dataframe["item_id"] = dataframe[
-        "item_id"
-    ].astype("int32")
+    dataframe["item_id"] = dataframe["item_id"].astype("int32")
 
-    dataframe = dataframe[
+    cleaned_dataframe: pd.DataFrame = dataframe[
         [
             "timestamp",
             "user_id",
@@ -168,24 +136,20 @@ def clean_data(
             "category_id",
             "behavior_type",
         ]
-    ]
+    ].copy()
 
-    final_rows = len(dataframe)
+    final_rows = len(cleaned_dataframe)
 
     statistics = {
         "initial_rows": initial_rows,
-        "missing_rows_removed": missing_before,
-        "invalid_behavior_rows_removed": (
-            invalid_behavior_rows
-        ),
-        "invalid_timestamp_rows_removed": (
-            invalid_timestamp_rows
-        ),
-        "duplicate_rows_removed": duplicate_rows,
+        "missing_rows_removed": missing_rows_removed,
+        "invalid_behavior_rows_removed": (invalid_behavior_rows_removed),
+        "invalid_timestamp_rows_removed": (invalid_timestamp_rows_removed),
+        "duplicate_rows_removed": (duplicate_rows_removed),
         "final_rows": final_rows,
     }
 
-    return dataframe, statistics
+    return cleaned_dataframe, statistics
 
 
 def save_clean_data(
@@ -216,43 +180,33 @@ def main() -> None:
 
     dataframe = load_raw_data(RAW_DATA_PATH)
 
-    print(
-        f"Loaded {len(dataframe):,} raw records."
-    )
+    print(f"Loaded {len(dataframe):,} raw records.")
 
     dataframe = standardize_schema(dataframe)
 
     print("Cleaning dataset...")
 
-    cleaned_dataframe, statistics = clean_data(
-        dataframe
-    )
+    cleaned_dataframe, statistics = clean_data(dataframe)
 
     print("\nCleaning summary:")
+
+    print("Initial rows: " f"{statistics['initial_rows']:,}")
+
+    print("Missing rows removed: " f"{statistics['missing_rows_removed']:,}")
+
     print(
-        f"Initial rows: "
-        f"{statistics['initial_rows']:,}"
-    )
-    print(
-        f"Missing rows removed: "
-        f"{statistics['missing_rows_removed']:,}"
-    )
-    print(
-        f"Invalid behavior rows removed: "
+        "Invalid behavior rows removed: "
         f"{statistics['invalid_behavior_rows_removed']:,}"
     )
+
     print(
-        f"Invalid timestamp rows removed: "
+        "Invalid timestamp rows removed: "
         f"{statistics['invalid_timestamp_rows_removed']:,}"
     )
-    print(
-        f"Duplicate rows removed: "
-        f"{statistics['duplicate_rows_removed']:,}"
-    )
-    print(
-        f"Final rows: "
-        f"{statistics['final_rows']:,}"
-    )
+
+    print("Duplicate rows removed: " f"{statistics['duplicate_rows_removed']:,}")
+
+    print("Final rows: " f"{statistics['final_rows']:,}")
 
     print("\nSaving cleaned dataset...")
 
@@ -261,10 +215,7 @@ def main() -> None:
         PROCESSED_DATA_PATH,
     )
 
-    print(
-        f"Cleaned dataset saved to: "
-        f"{PROCESSED_DATA_PATH}"
-    )
+    print("Cleaned dataset saved to: " f"{PROCESSED_DATA_PATH}")
 
 
 if __name__ == "__main__":

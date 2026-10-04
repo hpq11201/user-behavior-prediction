@@ -4,36 +4,15 @@ from pathlib import Path
 
 import pandas as pd
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-CLEAN_DATA_PATH = (
-    PROJECT_ROOT
-    / "data"
-    / "processed"
-    / "user_behavior_clean.parquet"
-)
+CLEAN_DATA_PATH = PROJECT_ROOT / "data" / "processed" / "user_behavior_clean.parquet"
 
-USER_SUMMARY_PATH = (
-    PROJECT_ROOT
-    / "data"
-    / "interim"
-    / "user_summary.parquet"
-)
+USER_SUMMARY_PATH = PROJECT_ROOT / "data" / "interim" / "user_summary.parquet"
 
-ITEM_SUMMARY_PATH = (
-    PROJECT_ROOT
-    / "data"
-    / "interim"
-    / "item_summary.parquet"
-)
+ITEM_SUMMARY_PATH = PROJECT_ROOT / "data" / "interim" / "item_summary.parquet"
 
-TIME_SUMMARY_PATH = (
-    PROJECT_ROOT
-    / "data"
-    / "interim"
-    / "time_summary.parquet"
-)
+TIME_SUMMARY_PATH = PROJECT_ROOT / "data" / "interim" / "time_summary.parquet"
 
 EXPECTED_COLUMNS = [
     "timestamp",
@@ -63,9 +42,7 @@ def print_result(
     """
     status = "PASS" if passed else "FAIL"
 
-    print(
-        f"[{status}] {check_name}: {detail}"
-    )
+    print(f"[{status}] {check_name}: {detail}")
 
     return passed
 
@@ -86,15 +63,12 @@ def validate_clean_data(
     results.append(
         print_result(
             "Required columns",
-            set(EXPECTED_COLUMNS)
-            == set(dataframe.columns),
+            set(EXPECTED_COLUMNS) == set(dataframe.columns),
             str(list(dataframe.columns)),
         )
     )
 
-    missing_values = int(
-        dataframe.isna().sum().sum()
-    )
+    missing_values = int(dataframe.isna().sum().sum())
 
     results.append(
         print_result(
@@ -105,36 +79,24 @@ def validate_clean_data(
     )
 
     invalid_behaviors = int(
-        (
-            ~dataframe["behavior_type"].isin(
-                VALID_BEHAVIOR_TYPES
-            )
-        ).sum()
+        (~dataframe["behavior_type"].isin(VALID_BEHAVIOR_TYPES)).sum()
     )
 
     results.append(
         print_result(
             "Behavior values",
             invalid_behaviors == 0,
-            (
-                f"{invalid_behaviors:,} "
-                "invalid behavior records"
-            ),
+            (f"{invalid_behaviors:,} " "invalid behavior records"),
         )
     )
 
-    invalid_timestamps = int(
-        dataframe["timestamp"].isna().sum()
-    )
+    invalid_timestamps = int(dataframe["timestamp"].isna().sum())
 
     results.append(
         print_result(
             "Timestamp validity",
             invalid_timestamps == 0,
-            (
-                f"{invalid_timestamps:,} "
-                "invalid timestamp records"
-            ),
+            (f"{invalid_timestamps:,} " "invalid timestamp records"),
         )
     )
 
@@ -153,10 +115,7 @@ def validate_clean_data(
         print_result(
             "Business-key uniqueness",
             duplicate_keys == 0,
-            (
-                f"{duplicate_keys:,} "
-                "duplicate business keys"
-            ),
+            (f"{duplicate_keys:,} " "duplicate business keys"),
         )
     )
 
@@ -165,18 +124,13 @@ def validate_clean_data(
         "item_id",
         "category_id",
     ]:
-        invalid_ids = int(
-            (dataframe[column] <= 0).sum()
-        )
+        invalid_ids = int((dataframe[column] <= 0).sum())
 
         results.append(
             print_result(
                 f"{column} validity",
                 invalid_ids == 0,
-                (
-                    f"{invalid_ids:,} "
-                    "non-positive values"
-                ),
+                (f"{invalid_ids:,} " "non-positive values"),
             )
         )
 
@@ -204,24 +158,15 @@ def validate_intermediate_tables(
 
     expected_total = len(clean_dataframe)
 
-    user_total = int(
-        user_summary["total_behaviors"].sum()
-    )
-    item_total = int(
-        item_summary["total_behaviors"].sum()
-    )
-    time_total = int(
-        time_summary["total_behaviors"].sum()
-    )
+    user_total = int(user_summary["total_behaviors"].sum())
+    item_total = int(item_summary["total_behaviors"].sum())
+    time_total = int(time_summary["total_behaviors"].sum())
 
     results.append(
         print_result(
             "User table behavior total",
             user_total == expected_total,
-            (
-                f"{user_total:,} / "
-                f"{expected_total:,}"
-            ),
+            (f"{user_total:,} / " f"{expected_total:,}"),
         )
     )
 
@@ -229,10 +174,7 @@ def validate_intermediate_tables(
         print_result(
             "Item table behavior total",
             item_total == expected_total,
-            (
-                f"{item_total:,} / "
-                f"{expected_total:,}"
-            ),
+            (f"{item_total:,} / " f"{expected_total:,}"),
         )
     )
 
@@ -240,30 +182,17 @@ def validate_intermediate_tables(
         print_result(
             "Time table behavior total",
             time_total == expected_total,
-            (
-                f"{time_total:,} / "
-                f"{expected_total:,}"
-            ),
+            (f"{time_total:,} / " f"{expected_total:,}"),
         )
     )
 
-    clean_purchase_total = int(
-        (
-            clean_dataframe["behavior_type"] == 4
-        ).sum()
-    )
+    clean_purchase_total = int((clean_dataframe["behavior_type"] == 4).sum())
 
-    user_purchase_total = int(
-        user_summary["purchase_count"].sum()
-    )
+    user_purchase_total = int(user_summary["purchase_count"].sum())
 
-    item_purchase_total = int(
-        item_summary["purchase_count"].sum()
-    )
+    item_purchase_total = int(item_summary["purchase_count"].sum())
 
-    time_purchase_total = int(
-        time_summary["purchase_count"].sum()
-    )
+    time_purchase_total = int(time_summary["purchase_count"].sum())
 
     purchase_consistent = (
         clean_purchase_total
@@ -295,10 +224,7 @@ def validate_intermediate_tables(
         print_result(
             "Intermediate missing values",
             intermediate_missing == 0,
-            (
-                f"{intermediate_missing:,} "
-                "missing values"
-            ),
+            (f"{intermediate_missing:,} " "missing values"),
         )
     )
 
@@ -318,11 +244,7 @@ def main() -> None:
         TIME_SUMMARY_PATH,
     ]
 
-    missing_files = [
-        path
-        for path in required_files
-        if not path.exists()
-    ]
+    missing_files = [path for path in required_files if not path.exists()]
 
     if missing_files:
         print("[FAIL] Required files")
@@ -330,51 +252,34 @@ def main() -> None:
         for path in missing_files:
             print(f"  Missing: {path}")
 
-        raise FileNotFoundError(
-            "Required validation files are missing."
-        )
+        raise FileNotFoundError("Required validation files are missing.")
 
     print("[PASS] Required files: all files found")
 
     print("\nLoading datasets...")
 
-    clean_dataframe = pd.read_parquet(
-        CLEAN_DATA_PATH
-    )
+    clean_dataframe = pd.read_parquet(CLEAN_DATA_PATH)
 
-    user_summary = pd.read_parquet(
-        USER_SUMMARY_PATH
-    )
+    user_summary = pd.read_parquet(USER_SUMMARY_PATH)
 
-    item_summary = pd.read_parquet(
-        ITEM_SUMMARY_PATH
-    )
+    item_summary = pd.read_parquet(ITEM_SUMMARY_PATH)
 
-    time_summary = pd.read_parquet(
-        TIME_SUMMARY_PATH
-    )
+    time_summary = pd.read_parquet(TIME_SUMMARY_PATH)
 
     print("\nClean dataset checks:")
 
-    clean_results = validate_clean_data(
-        clean_dataframe
-    )
+    clean_results = validate_clean_data(clean_dataframe)
 
     print("\nIntermediate table checks:")
 
-    intermediate_results = (
-        validate_intermediate_tables(
-            clean_dataframe,
-            user_summary,
-            item_summary,
-            time_summary,
-        )
+    intermediate_results = validate_intermediate_tables(
+        clean_dataframe,
+        user_summary,
+        item_summary,
+        time_summary,
     )
 
-    all_results = (
-        clean_results
-        + intermediate_results
-    )
+    all_results = clean_results + intermediate_results
 
     print("\n" + "=" * 60)
 
@@ -383,10 +288,7 @@ def main() -> None:
         print("All data quality checks passed.")
     else:
         print("FINAL RESULT: FAIL")
-        print(
-            "One or more data quality "
-            "checks failed."
-        )
+        print("One or more data quality " "checks failed.")
 
     print("=" * 60)
 
