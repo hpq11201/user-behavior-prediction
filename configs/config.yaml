@@ -2,9 +2,35 @@ project:
   name: "user-behavior-prediction"
 
 data:
-  raw_path: "data/raw"
-  interim_path: "data/interim"
-  processed_path: "data/processed"
+  raw_path: "data/raw/user_behavior.csv"
+  interim_dir: "data/interim"
+  processed_dir: "data/processed"
 
-model:
-  random_state: 42
+processing:
+  chunk_size: 1000000
+
+schema:
+  raw_columns:
+    - "time"
+    - "user_id"
+    - "item_id"
+    - "item_category"
+    - "behavior_type"
+
+  column_mapping:
+    time: "timestamp"
+    item_category: "category_id"
+
+  expected_columns:
+    - "timestamp"
+    - "user_id"
+    - "item_id"
+    - "category_id"
+    - "behavior_type"
+
+behavior:
+  valid_values:
+    - 1
+    - 2
+    - 3
+    - 4

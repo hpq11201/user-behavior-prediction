@@ -246,3 +246,17 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Project data files
+data/raw/*
+!data/raw/.gitkeep
+
+data/interim/*
+!data/interim/.gitkeep
+
+data/processed/*
+!data/processed/.gitkeep
+
+# Logs and temporary files
+*.log
+*.tmp
