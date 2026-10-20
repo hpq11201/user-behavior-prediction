@@ -607,6 +607,57 @@ This indicates that the model has practical value as a user-item ranking tool.
 \---
 
 
+## User segmentation insights
+
+Users were divided into five interpretable behavioral segments based on their
+historical browsing, favorite, cart and purchase activity.
+
+| Segment | Users | Share |
+| --- | ---: | ---: |
+| Buyer | 6,620 | 66.20% |
+| High-value buyer | 2,266 | 22.66% |
+| High-intent | 580 | 5.80% |
+| Browsing-oriented | 341 | 3.41% |
+| Interested | 193 | 1.93% |
+
+The largest segment is the standard Buyer group, representing 66.20% of all
+users.
+
+High-value buyers account for 22.66% of users but show substantially stronger
+behavioral intensity. On average, they record approximately:
+
+- 2,458.61 total behaviors
+- 2,286.46 views
+- 49.33 favorites
+- 89.07 cart actions
+- 33.74 purchases
+- 26.85 active days
+
+This group represents the most active and commercially valuable user segment.
+
+The High-intent segment contains 580 users who have cart behavior but no
+purchase behavior. Their average cart count is 13.35, suggesting that they have
+strong purchase intention but have not completed conversion.
+
+This group is therefore a suitable target for conversion-oriented strategies
+such as cart reminders, personalized recommendations, price notifications, or
+stock alerts.
+
+The Interested segment contains 193 users who have favorite behavior but no
+cart or purchase activity. These users show clear interest but have not yet
+progressed to the stronger purchase-intention stage.
+
+The Browsing-oriented segment contains 341 users. Although they have no
+favorite, cart or purchase behavior, they still record an average of 239.52
+views. This indicates that these users are active but remain at the exploration
+stage.
+
+Overall, the segmentation provides a practical behavioral progression:
+
+Browsing-oriented → Interested → High-intent → Buyer → High-value buyer
+
+This segmentation can support differentiated user operation strategies rather
+than applying the same recommendation or conversion approach to all users.
 
 \## 5. Product operation recommendations
 
