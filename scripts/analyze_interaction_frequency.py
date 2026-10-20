@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 RAW_DATA_PATH = Path("data/raw/user_behavior.csv")
 
 BUSINESS_KEY = [
