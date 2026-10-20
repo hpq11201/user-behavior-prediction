@@ -18,11 +18,7 @@ class SQLiteManager:
         self,
         database_path: Path = DEFAULT_DATABASE_PATH,
     ) -> None:
-        """Initialize the database manager.
-
-        Args:
-            database_path: Path to the SQLite database file.
-        """
+        """Initialize the database manager."""
         self.database_path = database_path
         self.connection: Optional[sqlite3.Connection] = None
 
@@ -59,16 +55,7 @@ class SQLiteManager:
         parameters: Sequence[Any] = (),
         commit: bool = False,
     ) -> sqlite3.Cursor:
-        """Execute one SQL statement.
-
-        Args:
-            sql: SQL statement.
-            parameters: Optional SQL parameters.
-            commit: Whether to commit after execution.
-
-        Returns:
-            SQLite cursor containing the execution result.
-        """
+        """Execute one SQL statement."""
         connection = self.connect()
         cursor = connection.cursor()
 
@@ -88,13 +75,7 @@ class SQLiteManager:
         parameters: Iterable[Sequence[Any]],
         commit: bool = True,
     ) -> None:
-        """Execute one SQL statement for multiple parameter sets.
-
-        Args:
-            sql: SQL statement.
-            parameters: Iterable of parameter sequences.
-            commit: Whether to commit after execution.
-        """
+        """Execute one SQL statement for multiple parameter sets."""
         connection = self.connect()
         cursor = connection.cursor()
 
@@ -145,10 +126,12 @@ class SQLiteManager:
         """Run SQL and return the result as a pandas DataFrame."""
         connection = self.connect()
 
+        query_parameters = list(parameters)
+
         result = pd.read_sql_query(
             sql,
             connection,
-            params=parameters,
+            params=query_parameters,
         )
 
         return cast(

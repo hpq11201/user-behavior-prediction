@@ -9,3 +9,5 @@ flake8
 mypy
 pylint
 pytest
+scikit-learn
+matplotlib
