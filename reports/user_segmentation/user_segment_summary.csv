@@ -1,0 +1,6 @@
+segment,users,avg_total_behaviors,avg_views,avg_favorites,avg_carts,avg_purchases,avg_active_days,user_share_pct
+Buyer,6620,934.72,890.09,17.78,20.24,6.61,19.52,66.2
+High-value buyer,2266,2458.61,2286.46,49.33,89.07,33.74,26.85,22.66
+High-intent,580,530.15,502.81,13.99,13.35,0.0,12.85,5.8
+Browsing-oriented,341,239.52,239.52,0.0,0.0,0.0,7.09,3.41
+Interested,193,563.26,537.65,25.61,0.0,0.0,12.24,1.93
