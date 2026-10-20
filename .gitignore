@@ -260,3 +260,6 @@ data/processed/*
 # Logs and temporary files
 *.log
 *.tmp
+
+# Trained model artifacts
+models/*.pkl
