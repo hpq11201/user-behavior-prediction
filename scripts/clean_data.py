@@ -1,33 +1,46 @@
-"""Clean and standardize the raw user behavior dataset."""
+"""Clean the raw user behavior dataset and save it as Parquet."""
 
 from pathlib import Path
+from typing import Any, cast
 
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-
-RAW_DATA_PATH = PROJECT_ROOT / "data" / "raw" / "user_behavior.csv"
-
-PROCESSED_DATA_PATH = (
-    PROJECT_ROOT / "data" / "processed" / "user_behavior_clean.parquet"
-)
+RAW_DATA_PATH = Path("data/raw/user_behavior.csv")
+OUTPUT_PATH = Path("data/processed/user_behavior_clean.parquet")
 
 COLUMN_MAPPING = {
     "time": "timestamp",
     "item_category": "category_id",
 }
 
+REQUIRED_COLUMNS = [
+    "timestamp",
+    "user_id",
+    "item_id",
+    "category_id",
+    "behavior_type",
+]
+
+BUSINESS_KEY = [
+    "user_id",
+    "item_id",
+    "behavior_type",
+    "timestamp",
+]
+
 VALID_BEHAVIOR_TYPES = {1, 2, 3, 4}
+
+MAX_INTERACTIONS_PER_HOUR = 100
 
 
 def load_raw_data(file_path: Path) -> pd.DataFrame:
-    """Load the raw user behavior CSV dataset.
+    """Load the raw user behavior dataset.
 
     Args:
-        file_path: Path to the raw CSV file.
+        file_path: Path to the raw CSV dataset.
 
     Returns:
-        Raw user behavior dataframe.
+        Raw user behavior DataFrame.
 
     Raises:
         FileNotFoundError: If the raw dataset does not exist.
@@ -35,132 +48,293 @@ def load_raw_data(file_path: Path) -> pd.DataFrame:
     if not file_path.exists():
         raise FileNotFoundError(f"Raw dataset not found: {file_path}")
 
-    dataframe: pd.DataFrame = pd.read_csv(file_path)
+    dataframe = cast(
+        pd.DataFrame,
+        pd.read_csv(file_path),
+    )
 
     return dataframe
 
 
-def standardize_schema(
-    dataframe: pd.DataFrame,
-) -> pd.DataFrame:
+def standardize_schema(dataframe: pd.DataFrame) -> pd.DataFrame:
     """Standardize source column names.
 
     Args:
-        dataframe: Raw user behavior dataframe.
+        dataframe: Raw user behavior DataFrame.
 
     Returns:
-        Dataframe with standardized column names.
+        DataFrame with standardized column names.
     """
-    standardized_dataframe: pd.DataFrame = dataframe.rename(columns=COLUMN_MAPPING)
+    standardized = cast(
+        pd.DataFrame,
+        dataframe.rename(columns=COLUMN_MAPPING).copy(),
+    )
 
-    return standardized_dataframe
+    return standardized
+
+
+def validate_required_columns(dataframe: pd.DataFrame) -> None:
+    """Validate that all required columns exist.
+
+    Args:
+        dataframe: User behavior DataFrame.
+
+    Raises:
+        ValueError: If required columns are missing.
+    """
+    missing_columns = [
+        column for column in REQUIRED_COLUMNS if column not in dataframe.columns
+    ]
+
+    if missing_columns:
+        raise ValueError(f"Missing required columns: {missing_columns}")
+
+
+def convert_timestamp(dataframe: pd.DataFrame) -> pd.DataFrame:
+    """Convert timestamp column to datetime.
+
+    Args:
+        dataframe: User behavior DataFrame.
+
+    Returns:
+        DataFrame with datetime timestamp.
+    """
+    converted = dataframe.copy()
+
+    converted["timestamp"] = pd.to_datetime(
+        converted["timestamp"],
+        errors="coerce",
+    )
+
+    converted = cast(
+        pd.DataFrame,
+        converted,
+    )
+
+    return converted
+
+
+def remove_missing_rows(
+    dataframe: pd.DataFrame,
+) -> tuple[pd.DataFrame, int]:
+    """Remove rows with missing required values.
+
+    Args:
+        dataframe: User behavior DataFrame.
+
+    Returns:
+        Cleaned DataFrame and removed row count.
+    """
+    initial_rows = len(dataframe)
+
+    cleaned = cast(
+        pd.DataFrame,
+        dataframe.dropna(
+            subset=REQUIRED_COLUMNS,
+        ).copy(),
+    )
+
+    removed_rows = initial_rows - len(cleaned)
+
+    return cleaned, removed_rows
+
+
+def remove_invalid_behavior_rows(
+    dataframe: pd.DataFrame,
+) -> tuple[pd.DataFrame, int]:
+    """Remove rows with invalid behavior types.
+
+    Args:
+        dataframe: User behavior DataFrame.
+
+    Returns:
+        Cleaned DataFrame and removed row count.
+    """
+    valid_mask = dataframe["behavior_type"].isin(VALID_BEHAVIOR_TYPES)
+
+    cleaned = cast(
+        pd.DataFrame,
+        dataframe.loc[valid_mask].copy(),
+    )
+
+    removed_rows = len(dataframe) - len(cleaned)
+
+    return cleaned, removed_rows
+
+
+def remove_invalid_timestamp_rows(
+    dataframe: pd.DataFrame,
+) -> tuple[pd.DataFrame, int]:
+    """Remove rows with invalid timestamps.
+
+    Args:
+        dataframe: User behavior DataFrame.
+
+    Returns:
+        Cleaned DataFrame and removed row count.
+    """
+    valid_mask = dataframe["timestamp"].notna()
+
+    cleaned = cast(
+        pd.DataFrame,
+        dataframe.loc[valid_mask].copy(),
+    )
+
+    removed_rows = len(dataframe) - len(cleaned)
+
+    return cleaned, removed_rows
+
+
+def remove_high_frequency_interactions(
+    dataframe: pd.DataFrame,
+    max_interactions_per_hour: int,
+) -> tuple[pd.DataFrame, int, int]:
+    """Remove abnormally frequent interaction groups.
+
+    Groups are defined by user_id, item_id, behavior_type,
+    and hourly timestamp. If a group frequency is above the
+    configured threshold, the entire group is removed.
+
+    Args:
+        dataframe: User behavior DataFrame.
+        max_interactions_per_hour: Maximum allowed frequency
+            for one user-item-behavior-hour group.
+
+    Returns:
+        Cleaned DataFrame, removed row count,
+        and removed group count.
+    """
+    interaction_frequency = dataframe.groupby(
+        BUSINESS_KEY,
+        dropna=False,
+    )[
+        BUSINESS_KEY[0]
+    ].transform("size")
+
+    abnormal_mask = interaction_frequency > max_interactions_per_hour
+
+    removed_rows = int(abnormal_mask.sum())
+
+    abnormal_dataframe = cast(
+        pd.DataFrame,
+        dataframe.loc[abnormal_mask].copy(),
+    )
+
+    if abnormal_dataframe.empty:
+        removed_group_count = 0
+    else:
+        removed_group_count = int(
+            abnormal_dataframe.groupby(
+                BUSINESS_KEY,
+                dropna=False,
+            ).ngroups
+        )
+
+    cleaned = cast(
+        pd.DataFrame,
+        dataframe.loc[~abnormal_mask].copy(),
+    )
+
+    return (
+        cleaned,
+        removed_rows,
+        removed_group_count,
+    )
+
+
+def optimize_data_types(
+    dataframe: pd.DataFrame,
+) -> pd.DataFrame:
+    """Optimize DataFrame data types.
+
+    Args:
+        dataframe: Cleaned user behavior DataFrame.
+
+    Returns:
+        DataFrame with optimized dtypes.
+    """
+    optimized = dataframe.copy()
+
+    optimized["user_id"] = optimized["user_id"].astype("int32")
+    optimized["item_id"] = optimized["item_id"].astype("int32")
+    optimized["category_id"] = optimized["category_id"].astype("int32")
+    optimized["behavior_type"] = optimized["behavior_type"].astype("int8")
+
+    optimized = cast(
+        pd.DataFrame,
+        optimized,
+    )
+
+    return optimized
 
 
 def clean_data(
     dataframe: pd.DataFrame,
-) -> tuple[pd.DataFrame, dict[str, int]]:
+) -> tuple[pd.DataFrame, dict[str, Any]]:
     """Clean the standardized user behavior dataset.
 
     Args:
-        dataframe: Standardized dataframe.
+        dataframe: Standardized user behavior DataFrame.
 
     Returns:
-        Tuple containing the cleaned dataframe and
-        cleaning statistics.
+        Cleaned DataFrame and cleaning summary.
     """
-    initial_rows = len(dataframe)
+    summary: dict[str, Any] = {}
 
-    required_columns = [
-        "timestamp",
-        "user_id",
-        "item_id",
-        "category_id",
-        "behavior_type",
-    ]
+    summary["initial_rows"] = len(dataframe)
 
-    missing_rows_removed = int(dataframe[required_columns].isna().any(axis=1).sum())
+    dataframe = convert_timestamp(dataframe)
 
-    dataframe = dataframe.dropna(subset=required_columns).copy()
+    (
+        dataframe,
+        missing_rows_removed,
+    ) = remove_missing_rows(dataframe)
 
-    invalid_behavior_mask = ~dataframe["behavior_type"].isin(VALID_BEHAVIOR_TYPES)
+    summary["missing_rows_removed"] = missing_rows_removed
 
-    invalid_behavior_rows_removed = int(invalid_behavior_mask.sum())
+    (
+        dataframe,
+        invalid_behavior_rows_removed,
+    ) = remove_invalid_behavior_rows(dataframe)
 
-    dataframe = dataframe.loc[~invalid_behavior_mask].copy()
+    summary["invalid_behavior_rows_removed"] = invalid_behavior_rows_removed
 
-    dataframe["timestamp"] = pd.to_datetime(
-        dataframe["timestamp"],
-        format="%Y-%m-%d %H",
-        errors="coerce",
+    (
+        dataframe,
+        invalid_timestamp_rows_removed,
+    ) = remove_invalid_timestamp_rows(dataframe)
+
+    summary["invalid_timestamp_rows_removed"] = invalid_timestamp_rows_removed
+
+    (
+        dataframe,
+        high_frequency_rows_removed,
+        high_frequency_groups_removed,
+    ) = remove_high_frequency_interactions(
+        dataframe=dataframe,
+        max_interactions_per_hour=(MAX_INTERACTIONS_PER_HOUR),
     )
 
-    invalid_timestamp_rows_removed = int(dataframe["timestamp"].isna().sum())
+    summary["high_frequency_rows_removed"] = high_frequency_rows_removed
 
-    dataframe = dataframe.dropna(subset=["timestamp"]).copy()
+    summary["high_frequency_groups_removed"] = high_frequency_groups_removed
 
-    duplicate_rows_removed = int(
-        dataframe.duplicated(
-            subset=[
-                "user_id",
-                "item_id",
-                "behavior_type",
-                "timestamp",
-            ],
-            keep="first",
-        ).sum()
-    )
+    dataframe = optimize_data_types(dataframe)
 
-    dataframe = dataframe.drop_duplicates(
-        subset=[
-            "user_id",
-            "item_id",
-            "behavior_type",
-            "timestamp",
-        ],
-        keep="first",
-    ).copy()
+    summary["final_rows"] = len(dataframe)
 
-    dataframe["behavior_type"] = dataframe["behavior_type"].astype("int8")
-
-    dataframe["category_id"] = dataframe["category_id"].astype("int32")
-
-    dataframe["user_id"] = dataframe["user_id"].astype("int32")
-
-    dataframe["item_id"] = dataframe["item_id"].astype("int32")
-
-    cleaned_dataframe: pd.DataFrame = dataframe[
-        [
-            "timestamp",
-            "user_id",
-            "item_id",
-            "category_id",
-            "behavior_type",
-        ]
-    ].copy()
-
-    final_rows = len(cleaned_dataframe)
-
-    statistics = {
-        "initial_rows": initial_rows,
-        "missing_rows_removed": missing_rows_removed,
-        "invalid_behavior_rows_removed": (invalid_behavior_rows_removed),
-        "invalid_timestamp_rows_removed": (invalid_timestamp_rows_removed),
-        "duplicate_rows_removed": (duplicate_rows_removed),
-        "final_rows": final_rows,
-    }
-
-    return cleaned_dataframe, statistics
+    return dataframe, summary
 
 
 def save_clean_data(
     dataframe: pd.DataFrame,
     output_path: Path,
 ) -> None:
-    """Save cleaned data in Parquet format.
+    """Save the cleaned dataset as Parquet.
 
     Args:
-        dataframe: Cleaned user behavior dataframe.
-        output_path: Output Parquet path.
+        dataframe: Cleaned user behavior DataFrame.
+        output_path: Destination Parquet path.
     """
     output_path.parent.mkdir(
         parents=True,
@@ -170,52 +344,69 @@ def save_clean_data(
     dataframe.to_parquet(
         output_path,
         index=False,
-        engine="pyarrow",
     )
+
+
+def print_summary(
+    summary: dict[str, Any],
+) -> None:
+    """Print the cleaning summary.
+
+    Args:
+        summary: Cleaning result summary.
+    """
+    print()
+    print("Cleaning summary:")
+    print(f"Initial rows: " f"{summary['initial_rows']:,}")
+    print("Missing rows removed: " f"{summary['missing_rows_removed']:,}")
+    print(
+        "Invalid behavior rows removed: "
+        f"{summary['invalid_behavior_rows_removed']:,}"
+    )
+    print(
+        "Invalid timestamp rows removed: "
+        f"{summary['invalid_timestamp_rows_removed']:,}"
+    )
+    print(
+        "High-frequency groups removed: "
+        f"{summary['high_frequency_groups_removed']:,}"
+    )
+    print("High-frequency rows removed: " f"{summary['high_frequency_rows_removed']:,}")
+    print(f"Final rows: " f"{summary['final_rows']:,}")
 
 
 def main() -> None:
-    """Run the complete data-cleaning workflow."""
+    """Run the complete data cleaning workflow."""
     print("Loading raw dataset...")
 
-    dataframe = load_raw_data(RAW_DATA_PATH)
+    raw_dataframe = load_raw_data(RAW_DATA_PATH)
 
-    print(f"Loaded {len(dataframe):,} raw records.")
+    print(f"Loaded {len(raw_dataframe):,} " "raw records.")
 
-    dataframe = standardize_schema(dataframe)
+    print("Standardizing schema...")
+
+    standardized_dataframe = standardize_schema(raw_dataframe)
+
+    validate_required_columns(standardized_dataframe)
 
     print("Cleaning dataset...")
 
-    cleaned_dataframe, statistics = clean_data(dataframe)
+    (
+        cleaned_dataframe,
+        summary,
+    ) = clean_data(standardized_dataframe)
 
-    print("\nCleaning summary:")
+    print_summary(summary)
 
-    print("Initial rows: " f"{statistics['initial_rows']:,}")
-
-    print("Missing rows removed: " f"{statistics['missing_rows_removed']:,}")
-
-    print(
-        "Invalid behavior rows removed: "
-        f"{statistics['invalid_behavior_rows_removed']:,}"
-    )
-
-    print(
-        "Invalid timestamp rows removed: "
-        f"{statistics['invalid_timestamp_rows_removed']:,}"
-    )
-
-    print("Duplicate rows removed: " f"{statistics['duplicate_rows_removed']:,}")
-
-    print("Final rows: " f"{statistics['final_rows']:,}")
-
-    print("\nSaving cleaned dataset...")
+    print()
+    print("Saving cleaned dataset...")
 
     save_clean_data(
-        cleaned_dataframe,
-        PROCESSED_DATA_PATH,
+        dataframe=cleaned_dataframe,
+        output_path=OUTPUT_PATH,
     )
 
-    print("Cleaned dataset saved to: " f"{PROCESSED_DATA_PATH}")
+    print("Cleaned dataset saved to: " f"{OUTPUT_PATH.resolve()}")
 
 
 if __name__ == "__main__":

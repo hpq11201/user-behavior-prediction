@@ -1,6 +1,7 @@
 """Validate cleaned data and intermediate aggregation tables."""
 
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 
@@ -22,7 +23,16 @@ EXPECTED_COLUMNS = [
     "behavior_type",
 ]
 
+BUSINESS_KEY = [
+    "user_id",
+    "item_id",
+    "behavior_type",
+    "timestamp",
+]
+
 VALID_BEHAVIOR_TYPES = {1, 2, 3, 4}
+
+MAX_INTERACTIONS_PER_HOUR = 100
 
 
 def print_result(
@@ -47,6 +57,50 @@ def print_result(
     return passed
 
 
+def validate_interaction_frequency(
+    dataframe: pd.DataFrame,
+) -> bool:
+    """Validate hourly interaction frequency.
+
+    A user-item-behavior-hour group is considered invalid when
+    its interaction count exceeds MAX_INTERACTIONS_PER_HOUR.
+
+    Args:
+        dataframe: Cleaned user behavior dataframe.
+
+    Returns:
+        Whether no abnormal high-frequency groups remain.
+    """
+    interaction_frequency = cast(
+        pd.Series,
+        dataframe.groupby(
+            BUSINESS_KEY,
+            dropna=False,
+        ).size(),
+    )
+
+    abnormal_frequency = interaction_frequency[
+        interaction_frequency > MAX_INTERACTIONS_PER_HOUR
+    ]
+
+    abnormal_groups = len(abnormal_frequency)
+
+    abnormal_rows = int(abnormal_frequency.sum())
+
+    maximum_frequency = int(interaction_frequency.max())
+
+    return print_result(
+        "High-frequency interactions",
+        abnormal_groups == 0,
+        (
+            f"{abnormal_groups:,} groups above "
+            f"{MAX_INTERACTIONS_PER_HOUR} interactions/hour, "
+            f"{abnormal_rows:,} rows affected, "
+            f"maximum frequency={maximum_frequency:,}"
+        ),
+    )
+
+
 def validate_clean_data(
     dataframe: pd.DataFrame,
 ) -> list[bool]:
@@ -58,7 +112,7 @@ def validate_clean_data(
     Returns:
         Validation results for each check.
     """
-    results = []
+    results: list[bool] = []
 
     results.append(
         print_result(
@@ -100,24 +154,7 @@ def validate_clean_data(
         )
     )
 
-    duplicate_keys = int(
-        dataframe.duplicated(
-            subset=[
-                "user_id",
-                "item_id",
-                "behavior_type",
-                "timestamp",
-            ]
-        ).sum()
-    )
-
-    results.append(
-        print_result(
-            "Business-key uniqueness",
-            duplicate_keys == 0,
-            (f"{duplicate_keys:,} " "duplicate business keys"),
-        )
-    )
+    results.append(validate_interaction_frequency(dataframe))
 
     for column in [
         "user_id",
@@ -154,19 +191,21 @@ def validate_intermediate_tables(
     Returns:
         Validation results for each check.
     """
-    results = []
+    results: list[bool] = []
 
     expected_total = len(clean_dataframe)
 
     user_total = int(user_summary["total_behaviors"].sum())
+
     item_total = int(item_summary["total_behaviors"].sum())
+
     time_total = int(time_summary["total_behaviors"].sum())
 
     results.append(
         print_result(
             "User table behavior total",
             user_total == expected_total,
-            (f"{user_total:,} / " f"{expected_total:,}"),
+            f"{user_total:,} / {expected_total:,}",
         )
     )
 
@@ -174,7 +213,7 @@ def validate_intermediate_tables(
         print_result(
             "Item table behavior total",
             item_total == expected_total,
-            (f"{item_total:,} / " f"{expected_total:,}"),
+            f"{item_total:,} / {expected_total:,}",
         )
     )
 
@@ -182,7 +221,7 @@ def validate_intermediate_tables(
         print_result(
             "Time table behavior total",
             time_total == expected_total,
-            (f"{time_total:,} / " f"{expected_total:,}"),
+            f"{time_total:,} / {expected_total:,}",
         )
     )
 
@@ -231,6 +270,25 @@ def validate_intermediate_tables(
     return results
 
 
+def load_parquet(
+    file_path: Path,
+) -> pd.DataFrame:
+    """Load a Parquet dataset.
+
+    Args:
+        file_path: Path to the Parquet file.
+
+    Returns:
+        Loaded dataframe.
+    """
+    dataframe = cast(
+        pd.DataFrame,
+        pd.read_parquet(file_path),
+    )
+
+    return dataframe
+
+
 def main() -> None:
     """Run all automated data quality checks."""
     print("=" * 60)
@@ -254,17 +312,17 @@ def main() -> None:
 
         raise FileNotFoundError("Required validation files are missing.")
 
-    print("[PASS] Required files: all files found")
+    print("[PASS] Required files: " "all files found")
 
     print("\nLoading datasets...")
 
-    clean_dataframe = pd.read_parquet(CLEAN_DATA_PATH)
+    clean_dataframe = load_parquet(CLEAN_DATA_PATH)
 
-    user_summary = pd.read_parquet(USER_SUMMARY_PATH)
+    user_summary = load_parquet(USER_SUMMARY_PATH)
 
-    item_summary = pd.read_parquet(ITEM_SUMMARY_PATH)
+    item_summary = load_parquet(ITEM_SUMMARY_PATH)
 
-    time_summary = pd.read_parquet(TIME_SUMMARY_PATH)
+    time_summary = load_parquet(TIME_SUMMARY_PATH)
 
     print("\nClean dataset checks:")
 
