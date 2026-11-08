@@ -1,0 +1,15 @@
+Time-stability limitation
+
+The current validation predictions correspond to one fixed future label window.
+Therefore, a true comparison of model performance across multiple independent
+time windows cannot be calculated from the current saved predictions.
+
+The project already uses time-based feature/label splitting rather than a random
+train-test split to reduce temporal leakage.
+
+A stronger temporal stability evaluation would require rebuilding features and
+labels for multiple rolling cut-off dates and retraining/evaluating the model
+for each period.
+
+This limitation is documented rather than estimating unsupported time-stability
+results.

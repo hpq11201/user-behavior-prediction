@@ -1,0 +1,16 @@
+activity_level,category_id,behavior_count,label
+Low,1863,13995,Low-1863
+Low,6000,13182,Low-6000
+Low,6648,10446,Low-6648
+Low,5027,9705,Low-5027
+Low,13230,8949,Low-13230
+Medium,1863,67390,Medium-1863
+Medium,5027,49465,Medium-5027
+Medium,13230,47884,Medium-13230
+Medium,5399,43858,Medium-5399
+Medium,5894,42794,Medium-5894
+High,1863,311862,High-1863
+High,13230,299940,High-13230
+High,5894,279388,High-5894
+High,5027,275110,High-5027
+High,6513,246984,High-6513

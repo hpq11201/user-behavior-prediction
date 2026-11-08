@@ -1,0 +1,1 @@
+Cold-start evaluation could not be computed directly because the saved validation score file does not contain seen_historically or from_category_recall columns. Candidate-source coverage is evaluated separately in the candidate-set analysis.
