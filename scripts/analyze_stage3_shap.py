@@ -148,7 +148,10 @@ def build_global_importance(
         ascending=False,
     ).reset_index(drop=True)
 
-    return result
+    return cast(
+        pd.DataFrame,
+        result,
+    )
 
 
 def create_global_importance_chart(
@@ -271,7 +274,10 @@ def create_direction_summary(
 
     result = pd.DataFrame(rows)
 
-    return result
+    return cast(
+        pd.DataFrame,
+        result,
+    )
 
 
 def create_local_explanations(
@@ -332,7 +338,10 @@ def create_local_explanations(
 
     result = pd.DataFrame(rows)
 
-    return result
+    return cast(
+        pd.DataFrame,
+        result,
+    )
 
 
 def create_dependence_plots(
@@ -393,9 +402,12 @@ def create_business_summary(
         "",
     ]
 
-    for index, row in top_rows.iterrows():
+    for rank, (_, row) in enumerate(
+        top_rows.iterrows(),
+        start=1,
+    ):
         lines.append(
-            f"{index + 1}. "
+            f"{rank}. "
             f"{row['feature']} "
             f"(mean |SHAP|="
             f"{row['mean_abs_shap']:.6f})"

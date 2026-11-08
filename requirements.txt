@@ -11,3 +11,8 @@ pylint
 pytest
 scikit-learn
 matplotlib
+lightgbm
+xgboost
+optuna
+imbalanced-learn
+shap
