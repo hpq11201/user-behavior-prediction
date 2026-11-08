@@ -1,0 +1,19 @@
+Stage 3 Stacking Summary
+========================
+
+Base models:
+- Logistic Regression
+- Optuna-tuned LightGBM
+- Simplified DIN
+
+Meta learner:
+- Logistic Regression
+
+Leakage control:
+The original validation dataset was split into separate meta-train and meta-test subsets using stratified sampling. The meta learner was fitted only on meta-train and all reported stacking metrics were calculated only on meta-test.
+
+Primary metric: PR-AUC
+
+Stacking meta-test PR-AUC: 0.070986
+Best model on meta-test: LightGBM Optuna
+Best meta-test PR-AUC: 0.071299

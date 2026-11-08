@@ -1,0 +1,71 @@
+Stage 3 A/B Test Design
+=======================
+
+Important Note
+--------------
+This document describes a proposed online experiment design. All conversion rates, effect sizes, sample sizes and experiment durations are design assumptions rather than observed production experiment results.
+
+1. Experiment Objective
+-----------------------
+Evaluate whether recommendations generated using the Optuna-tuned LightGBM purchase prediction model improve user purchase conversion compared with the existing recommendation strategy.
+
+2. Experiment Groups
+--------------------
+Control group: Continue using the existing recommendation or targeting strategy.
+Treatment group: Rank eligible user-item pairs using the Optuna-tuned LightGBM predicted purchase probability and prioritize high-score items for recommendation or marketing exposure.
+
+3. Randomization
+----------------
+Randomization unit: user_id.
+Traffic allocation: 50% Control / 50% Treatment.
+Assignment should be persistent throughout the experiment so the same user always remains in the same group.
+
+4. Primary Metric
+-----------------
+Purchase Conversion Rate = users purchasing the recommended item / users exposed.
+
+5. Secondary Metrics
+--------------------
+Click-Through Rate, Add-to-Cart Rate and GMV per Exposed User.
+
+6. Guardrail Metrics
+--------------------
+Recommendation delivery success, negative feedback, unsubscribe rate, abnormal exposure frequency and system latency.
+
+7. Sample Size Assumptions
+--------------------------
+Illustrative baseline purchase conversion rate: 1.00%.
+Preferred minimum detectable relative lift: 10%.
+Corresponding target treatment conversion: 1.100%.
+Required sample size per group: 163,095 users.
+Required total experiment sample: 326,190 users.
+Significance level alpha: 0.05.
+Statistical power: 80%.
+
+8. Recommended Experiment Duration
+----------------------------------
+Run for at least 14 days and continue until the required sample size is reached.
+A full-week or multi-week design helps reduce weekday/weekend and short-term novelty effects.
+
+9. Sample Ratio Mismatch Check
+------------------------------
+Before interpreting business metrics, verify that the observed Control/Treatment assignment is statistically consistent with the planned 50/50 allocation.
+A meaningful SRM should be investigated before any treatment-effect conclusion is accepted.
+
+10. Stopping Rule
+-----------------
+Do not stop the experiment early solely because an intermediate result becomes significant.
+The experiment should normally stop only after both the predefined minimum duration and target sample size have been reached.
+
+11. Decision Rule
+-----------------
+Recommend rollout only if Treatment produces a statistically meaningful improvement in the primary purchase conversion metric without material deterioration in guardrail metrics.
+
+12. Model Context
+-----------------
+The selected treatment model is the Optuna-tuned LightGBM, which was retained as the primary model after comparison with Logistic Regression, XGBoost, LSTM, GRU, Simplified DIN and Stacking.
+SHAP analysis indicates that interaction intensity and engagement variables including total_behaviors, active_days, view_count, days_since_last_behavior and cart_count are among the most influential model inputs.
+
+13. Interpretation Limitation
+-----------------------------
+Offline model metrics such as PR-AUC do not prove that the model will increase real-world purchase conversion. The proposed A/B test is required to estimate actual causal business impact.

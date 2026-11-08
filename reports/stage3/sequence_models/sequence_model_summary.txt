@@ -1,0 +1,12 @@
+Stage 3 Sequence Model Summary
+==============================
+
+Models: LSTM and GRU
+Imbalance strategy: 20:1 negative undersampling
+Primary selection metric: validation PR-AUC
+
+Important methodological note:
+The current Stage 3 dataset contains aggregated user-item features rather than a true timestamp-ordered interaction sequence. Therefore these LSTM/GRU models should be interpreted as simplified sequence baselines. They do not represent a full behavioral sequence model.
+
+Best sequence baseline: GRU
+Best validation PR-AUC: 0.036254

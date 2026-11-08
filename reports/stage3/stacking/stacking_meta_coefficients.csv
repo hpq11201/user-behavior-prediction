@@ -1,0 +1,4 @@
+base_model,coefficient
+Logistic Regression,1.288422218264771
+LightGBM Optuna,7.183702735356835
+Simplified DIN,4.856014705985595

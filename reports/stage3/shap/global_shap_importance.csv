@@ -1,0 +1,9 @@
+feature,mean_abs_shap
+total_behaviors,0.767802806617965
+active_days,0.2974645242214395
+view_count,0.20431715592000324
+days_since_last_behavior,0.16436389277841548
+cart_count,0.13710847388829925
+from_category_recall,0.07935107212370607
+favorite_count,0.028828880133536107
+seen_historically,0.017833694505801977

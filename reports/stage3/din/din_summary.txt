@@ -1,0 +1,12 @@
+Stage 3 Simplified DIN Summary
+==============================
+
+Primary selection metric: validation PR-AUC
+Imbalance strategy: 20:1 negative undersampling
+
+Methodological limitation:
+The available Stage 3 modeling table contains aggregated user-item features rather than a true timestamp-ordered user behavior history. Therefore this implementation is a simplified DIN-style baseline using user, item and category embeddings plus an attention-style interest interaction. It should not be interpreted as a complete industrial DIN implementation.
+
+DIN validation PR-AUC: 0.042616
+Best model in comparison: LightGBM Optuna
+Best PR-AUC: 0.065577

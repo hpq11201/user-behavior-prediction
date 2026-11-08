@@ -1,0 +1,8 @@
+Stage 3 imbalance strategy comparison
+=====================================
+
+Primary selection metric: PR-AUC
+Best strategy: Undersampling 20:1
+Best validation PR-AUC: 0.037063
+
+Because the purchase target is extremely imbalanced, PR-AUC is treated as the primary selection metric. ROC-AUC and threshold-based Precision/Recall/F1 are reported as supporting metrics.

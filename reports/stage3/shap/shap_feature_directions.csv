@@ -1,0 +1,9 @@
+feature,shap_value_correlation,direction
+total_behaviors,0.7928664575976156,Higher values generally increase predicted purchase probability
+view_count,0.16389973240334083,Higher values generally increase predicted purchase probability
+favorite_count,0.7425709040407417,Higher values generally increase predicted purchase probability
+cart_count,0.888395612010318,Higher values generally increase predicted purchase probability
+active_days,0.8960966595970216,Higher values generally increase predicted purchase probability
+days_since_last_behavior,-0.4850869415066948,Higher values generally decrease predicted purchase probability
+seen_historically,0.9932002546954787,Higher values generally increase predicted purchase probability
+from_category_recall,0.7902345939420345,Higher values generally increase predicted purchase probability

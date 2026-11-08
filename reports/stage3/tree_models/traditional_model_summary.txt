@@ -1,0 +1,10 @@
+Stage 3 Traditional Model Comparison
+====================================
+
+Imbalance strategy: 20:1 negative undersampling
+Primary model selection metric: PR-AUC
+
+Best baseline model: LightGBM
+Best validation PR-AUC: 0.063576
+
+XGBoost and LightGBM are baseline tree models at this stage. Hyperparameters have not yet been optimized with Optuna.

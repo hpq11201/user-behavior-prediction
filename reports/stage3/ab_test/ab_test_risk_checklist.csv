@@ -1,0 +1,8 @@
+risk,check,action
+Sample Ratio Mismatch,Verify actual traffic split is consistent with the planned 50/50 allocation.,Pause analysis and investigate assignment or logging logic if SRM is detected.
+Cross-group contamination,Randomize at user level so one user cannot enter both groups.,Use persistent user-level experiment IDs.
+Repeated exposure bias,Track exposure frequency per user.,Apply recommendation frequency caps.
+Novelty effect,Monitor metric stability over several days.,Avoid declaring success based only on the first few days.
+Business-seasonality effect,Ensure control and treatment run simultaneously.,Run experiment across at least two weeks when feasible.
+Metric peeking,Do not repeatedly stop the experiment because a temporary p-value is significant.,Use predefined stopping criteria.
+Model serving failure,Monitor prediction and recommendation delivery success.,Fall back to the existing recommendation strategy if serving fails.

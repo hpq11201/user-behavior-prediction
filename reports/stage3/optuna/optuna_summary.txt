@@ -1,0 +1,11 @@
+Stage 3 Optuna Optimization Summary
+===================================
+
+Primary optimization metric: Validation PR-AUC
+Imbalance strategy: 20:1 negative undersampling
+
+LightGBM trials: 30
+XGBoost trials: 15
+
+Best overall model: LightGBM Optuna
+Best validation PR-AUC: 0.065577
